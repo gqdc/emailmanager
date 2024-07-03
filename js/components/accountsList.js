@@ -1,9 +1,94 @@
-async function make_accounts_section(domain) {
-  console.info('make_accounts_section');
+function make_accounts_section(domain, accountsList) {
+  console.info('make_accounts_section ' + domain);
+  
+  // RAZ de la section (utile lorsque l'on veut regénérer la liste)
+  //document.querySelector('section#accounts').innerHTML = "";
+
+  const tpl = document.querySelector("template#accounts_list");
+  const tplSection = document.importNode(tpl.content, true);
+  
+  const accountsTable = tplSection.querySelector('table');
+  const sectionButton = tplSection.querySelector('button#create_email_account');
+  const sectionHeader = tplSection.querySelector('header');
+  const sectionHeaderTitle = sectionHeader.querySelector('h2');
+  
+  sectionHeaderTitle.innerText = `Liste des comptes de courriels @${domain}`;
+
+  accountsTable.classList.add('w3-table-all', 'w3-hoverable');
+
+  for (const account of accountsList) {
+    const accountLine = document.createElement("tr");
+
+    const email = document.createElement("td");
+    const forward = document.createElement("td");
+    const quota = document.createElement("td");
+    const actions = document.createElement("td");
+
+    email.textContent = account.username + "@" + account.domain;
+    forward.textContent = account.forward_to
+    quota.innerHTML = floor10(account.bytes/1073741824,'-1') + ' Go / ' + account.quota/1048576 + ' Go<br />' + account.messages + ' Messages'    ;
+    actions.classList.add('w3-center');
+
+    actions.innerHTML = `<button class="w3-button w3-blue" name="editEmail" value="${account.username}@${account.domain}" >éditer</button>`;
+ 
+    actions.innerHTML += `<button class="w3-button w3-red" name="deleteEmail" value="${account.username}@${account.domain}">supprimer</button>`;
+
+    accountLine.appendChild(email);
+    accountLine.appendChild(forward);
+    accountLine.appendChild(quota);
+    accountLine.appendChild(actions);
+
+    accountsTable.appendChild(accountLine);
+  }
+
+  document.querySelector('section#accounts').append(sectionHeader, accountsTable)
+  
+  let addBtn = document.getElementById('create_email_account');
+  let deleteBtn = document.querySelectorAll('button[name=deleteEmail');
+  let editBtn = document.querySelectorAll('button[name=editEmail');
+
+  addBtn.addEventListener('click', () => {
+    console.log('addBtn');
+    make_account_creation_modal();
+    show_account_creation_modal();
+  })
+
+  deleteBtn.forEach(button => {
+    button.addEventListener('click', async (event) => {
+    console.log("deleteEmail");
+      try {
+        console.log(event);
+        let make = await make_account_deletion_modal(event, accountsList);
+        show_account_deletion_modal(event);
+      } catch (e) {
+        console.log(e);
+      }
+    })
+  })
+
+  editBtn.forEach(button => {
+    button.addEventListener('click', async (event) => {
+      //makeActionModal(accountsList, event);
+      try {
+        let make = await make_account_edition_modal(event, accountsList);
+        show_account_edition_modal(event);
+      } catch (e) {
+        console.log(e);
+      }
+    })
+  })
+}
+
+
+async function update_accounts_section(domain,accountList=null) {
+  console.info('update_accounts_section ' + domain);
+  if (accountList) {
+    console.info('with ' + accountList);
+  }
   // RAZ de la section (utile lorsque l'on veut regénérer la liste)
   document.querySelector('section#accounts').innerHTML = "";
 
-  const tpl = document.querySelector("#accounts_list");
+  const tpl = document.querySelector("template#accounts_list");
   const tplSection = document.importNode(tpl.content, true);
   
   const accountsTable = tplSection.querySelector('table');
@@ -16,7 +101,7 @@ async function make_accounts_section(domain) {
   accountsTable.classList.add('w3-table-all', 'w3-hoverable');
 
   try {
-    const accountsList = await fetchAccountList(domain)
+    const accountsList = await fetchAccountsList(domain)
 
     if (accountsList) {
       for (const account of accountsList) {
@@ -398,9 +483,15 @@ function make_account_creation_modal() {
               usernameWarningBox.innerHTML = `<img src="/mail/img/warning-signs.svg" height="22" width="22" alt="Attention"> ${accountExistence.error}`;
               usernameWarningBox.style.display = "inherit";
             } else {
-              console.log(accountExistence);
-              usernameWarningBox.innerHTML = `<img src="/mail/img/warning-signs.svg" height="22" width="22" alt="Attention"> Erreur inconnu`;
-              usernameWarningBox.style.display = "inherit";
+                if (accountExistence[0]['active'] == 1) {
+                  console.log("Le compte existe déjà");
+                  usernameScoreBox.innerHTML = `<img src="/mail/img/checked-success.svg" height="22" width="22" alt="Success"> Le nom d'utilisateur est déjà utilisé`;
+                  usernameScoreBox.style.display = "inherit";      
+                } else {
+                  console.log(accountExistence);
+                  usernameWarningBox.innerHTML = `<img src="/mail/img/warning-signs.svg" height="22" width="22" alt="Attention"> Erreur inconnu`;
+                  usernameWarningBox.style.display = "inherit";    
+                }              
             }
           } else if (accountExistence.length == 0) {
             console.log("Le compte n'existe pas");
@@ -418,7 +509,7 @@ function make_account_creation_modal() {
       usernameRequirementsBox.innerHTML = '<img src="/mail/img/information-help.svg" height="22" width="22"> 4 caractères minimum';
       usernameRequirementsBox.style.display = "inherit";
     }
-  }, 800));
+  }, 500));
 
   add_password_inputs(formID, username, domain);
 
@@ -428,7 +519,7 @@ function make_account_creation_modal() {
   parentForm.addEventListener("submit", (event) => {
     event.preventDefault();
     showLoader(formID);
-    create_account(parentForm);
+    add_account(parentForm);
   });
 }
 
@@ -628,17 +719,19 @@ function add_password_inputs(formID, username=null, domain=null) {
     } else {
         passwordStatusBox.style.display = "none";
     }    
-  },800));
+  },500));
 
   passwordFormInputPasswordVerify.addEventListener("keyup", debounce(function(event){
     comparePasswords(formID);
   }));
 
-  parentForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    showLoader(parentForm.id);
-    setPassword(domain, username, parentForm);
-  });
+  if (parentForm.id == "email_password") {
+    parentForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      showLoader(parentForm.id);
+      setPassword(domain, username, parentForm);  
+    });
+  }
 
   securityFieldset.appendChild(password_inputs);
 }

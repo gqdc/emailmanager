@@ -1,5 +1,5 @@
 const domain = Email.DomainName;
-make_accounts_section(domain);
+const accountsList = Email.AccountsList;
 
 /**
  * Adjusts a number to the specified digit.
@@ -56,3 +56,4 @@ function passwordEstimator (password, userinputs) {
 }
 //const debouncedpasswordEstimator = debounce(passwordEstimator, 2000);
 
+make_accounts_section(Email.DomainName,Email.AccountsList);

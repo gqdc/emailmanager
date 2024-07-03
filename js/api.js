@@ -1,9 +1,8 @@
-async function fetchAccountList(domain) {
+async function fetchAccountsList() {
   const formData = new FormData();
-  formData.append("action", "get_account_list");
-  formData.append("domainName", domain );
-
-  const requestURL = '/mail/models/dovecotApiClient.php';
+  formData.append("action", "get_accounts_list");
+  
+  const requestURL = '/emailmanager/';
   const request = new Request(requestURL, {
     method: "POST",
     body: formData,
@@ -13,8 +12,8 @@ async function fetchAccountList(domain) {
     const response = await fetch(request);
     if (!response.ok) {
       throw new Error(`Erreur HTTP : ${response.status}`);
-    
-}    const json = await response.json();
+    }
+    const json = await response.json();
     return json;
   } catch (error) {
     console.error('Erreur :', error);
@@ -24,7 +23,7 @@ async function fetchAccountList(domain) {
 
 async function fetchAccountInformations(domain, username) {
   try {
-    const accountsList = await fetchAccountList(domain)
+    const accountsList = await fetchAccountsList(domain)
 
     if (accountsList) {
       for (const account of accountsList) {
@@ -67,7 +66,7 @@ async function setRedirection(domain, username, form) {
   formData.delete("redirectTarget");
   console.log(formData);
 
-  const requestURL = '/mail/models/dovecotApiClient.php';
+  const requestURL = '/emailmanager/';
   const request = new Request(requestURL, {
     method: "POST",
     body: formData,
@@ -114,7 +113,7 @@ async function setPassword(domain, username, form) {
   formData.append("username", username);
   formData.append("password", password);
 
-  const requestURL = '/mail/models/dovecotApiClient.php';
+  const requestURL = '/emailmanager/';
   const request = new Request(requestURL, {
     method: "POST",
     body: formData,
@@ -152,7 +151,7 @@ async function get_account_informations(form) {
   formData.append("domainName", domain);
   formData.delete("password");
 
-  const requestURL = '/mail/models/dovecotApiClient.php';
+  const requestURL = '/emailmanager/';
   const request = new Request(requestURL, {
     method: "POST",
     body: formData,
@@ -180,16 +179,16 @@ async function get_account_informations(form) {
   }
 }
 
-async function create_account(form) {
-  console.info('create_account');
+async function add_account(form) {
+  console.info('add_account');
   
-  const action = "create_account";
+  const action = "add_account";
   const formData = new FormData(form);
 
   formData.append("action", action);
   formData.append("domainName", domain);
 
-  const requestURL = '/mail/models/dovecotApiClient.php';
+  const requestURL = '/emailmanager/';
   const request = new Request(requestURL, {
     method: "POST",
     body: formData,
@@ -210,7 +209,7 @@ async function create_account(form) {
     if (json.success == 'true') {
       showCheckmark(form.id);
       disableButton(form.id);
-      make_accounts_section(domain);
+      update_accounts_section(domain);
       return json;
     } else {
       console.error('Erreur : ', json.error);
@@ -235,7 +234,7 @@ async function delete_account(domain, username, form) {
 
   console.log(formData);
 
-  const requestURL = '/mail/models/dovecotApiClient.php';
+  const requestURL = '/emailmanager/';
   const request = new Request(requestURL, {
     method: "POST",
     body: formData,
@@ -254,7 +253,7 @@ async function delete_account(domain, username, form) {
     const json = await response.json();
     showCheckmark(form.id);
     disableButton(form.id);
-    make_accounts_section(domain);
+    update_accounts_section(domain);
     return json;
   } catch (error) {
     showCrossmark(form.id);
