@@ -29,7 +29,7 @@ function make_accounts_section(domain, accountsList) {
     quota.innerHTML = floor10(account.bytes/1073741824,'-1') + ' Go / ' + account.quota/1048576 + ' Go<br />' + account.messages + ' Messages'    ;
     actions.classList.add('w3-center');
 
-    actions.innerHTML = `<button class="w3-button w3-blue" name="editEmail" value="${account.username}@${account.domain}" >éditer</button>`;
+    actions.innerHTML = `<button class="w3-button w3-blue" name="editEmail" value="${account.username}@${account.domain}" >éditer</button> `;
  
     actions.innerHTML += `<button class="w3-button w3-red" name="deleteEmail" value="${account.username}@${account.domain}">supprimer</button>`;
 
@@ -122,7 +122,7 @@ async function update_accounts_section(domain,accountList=null) {
         quota.innerHTML = floor10(account.bytes/1073741824,'-1') + ' Go / ' + account.quota/1048576 + ' Go<br />' + account.messages + ' Messages'    ;
         actions.classList.add('w3-center');
 
-        actions.innerHTML = `<button class="w3-button w3-blue" name="editEmail" value="${account.username}@${account.domain}" >éditer</button>`;
+        actions.innerHTML = `<button class="w3-button w3-blue" name="editEmail" value="${account.username}@${account.domain}" >éditer</button> `;
      
         /*if ( account.active == 0 ) {
             actions.innerHTML += `<button class="w3-button" name="activateEmail" value="${account.username}@${account.domain}">activer</button>`;
