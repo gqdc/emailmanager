@@ -468,7 +468,7 @@ function make_account_creation_modal() {
       usernameStatusBox.classList.add("w3-ul");
       usernameStatusBox.style.display = "block";
 
-      usernameRequirementsBox.innerHTML = '<img src="/mail/img/information-help.svg" height="22" width="22"> 4 caractères minimum';
+      usernameRequirementsBox.innerHTML = '<img src="img/information-help.svg" height="22" width="22"> 4 caractères minimum';
       usernameRequirementsBox.style.display = "inherit";
 
       if (usernameInput.value.length > 3) {
@@ -480,22 +480,22 @@ function make_account_creation_modal() {
           if (accountExistence.length != 0) {
             if (accountExistence.error) {
               console.log(accountExistence);
-              usernameWarningBox.innerHTML = `<img src="/mail/img/warning-signs.svg" height="22" width="22" alt="Attention"> ${accountExistence.error}`;
+              usernameWarningBox.innerHTML = `<img src="img/warning-signs.svg" height="22" width="22" alt="Attention"> ${accountExistence.error}`;
               usernameWarningBox.style.display = "inherit";
             } else {
                 if (accountExistence[0]['active'] == 1) {
                   console.log("Le compte existe déjà");
-                  usernameScoreBox.innerHTML = `<img src="/mail/img/checked-success.svg" height="22" width="22" alt="Success"> Le nom d'utilisateur est déjà utilisé`;
+                  usernameScoreBox.innerHTML = `<img src="img/checked-success.svg" height="22" width="22" alt="Success"> Le nom d'utilisateur est déjà utilisé`;
                   usernameScoreBox.style.display = "inherit";      
                 } else {
                   console.log(accountExistence);
-                  usernameWarningBox.innerHTML = `<img src="/mail/img/warning-signs.svg" height="22" width="22" alt="Attention"> Erreur inconnu`;
+                  usernameWarningBox.innerHTML = `<img src="img/warning-signs.svg" height="22" width="22" alt="Attention"> Erreur inconnu`;
                   usernameWarningBox.style.display = "inherit";    
                 }              
             }
           } else if (accountExistence.length == 0) {
             console.log("Le compte n'existe pas");
-            usernameScoreBox.innerHTML = `<img src="/mail/img/checked-success.svg" height="22" width="22" alt="Success"> nom d'utilisateur valide`;
+            usernameScoreBox.innerHTML = `<img src="img/checked-success.svg" height="22" width="22" alt="Success"> nom d'utilisateur valide`;
             usernameScoreBox.style.display = "inherit";
 
             usernameWarningBox.innerHTML = "";
@@ -506,7 +506,7 @@ function make_account_creation_modal() {
         }
       }
     } else {
-      usernameRequirementsBox.innerHTML = '<img src="/mail/img/information-help.svg" height="22" width="22"> 4 caractères minimum';
+      usernameRequirementsBox.innerHTML = '<img src="img/information-help.svg" height="22" width="22"> 4 caractères minimum';
       usernameRequirementsBox.style.display = "inherit";
     }
   }, 500));
@@ -646,7 +646,7 @@ function add_password_inputs(formID, username=null, domain=null) {
       passwordStatusBox.classList.add("w3-ul");
       passwordStatusBox.style.display = "block";
 
-      passwordRequirementsBox.innerHTML = '<img src="/mail/img/information-help.svg" height="22" width="22"> 12 caractères minimum';
+      passwordRequirementsBox.innerHTML = '<img src="img/information-help.svg" height="22" width="22"> 12 caractères minimum';
       passwordRequirementsBox.style.display = "inherit";
 
       if (passwordFormInputPassword.value.length >= 12 ) {
@@ -692,7 +692,7 @@ function add_password_inputs(formID, username=null, domain=null) {
 
         if (passwordTestResult.feedback.warning !== null) {
           console.log(passwordTestResult.feedback.warning);
-          passwordWarningBox.innerHTML = `<img src="/mail/img/warning-signs.svg" height="22" width="22" alt="Attention"> ${passwordTestResult.feedback.warning}`;
+          passwordWarningBox.innerHTML = `<img src="img/warning-signs.svg" height="22" width="22" alt="Attention"> ${passwordTestResult.feedback.warning}`;
           passwordWarningBox.style.display = "inherit";
         } else {
           passwordWarningBox.innerHTML = "";
@@ -707,7 +707,7 @@ function add_password_inputs(formID, username=null, domain=null) {
           passwordTestResult.feedback.suggestions.forEach(function (element) {
             let suggestion = document.createElement('li');
             suggestion.style.paddingLeft = '0px';
-            suggestion.innerHTML = `<img src="/mail/img/information-help.svg" height="22" width="22" alt="Conseils"> ${element}`;
+            suggestion.innerHTML = `<img src="img/information-help.svg" height="22" width="22" alt="Conseils"> ${element}`;
             passwordSuggestionBox.appendChild(suggestion);
           });
 
