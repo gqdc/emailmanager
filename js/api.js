@@ -222,14 +222,13 @@ async function add_account(form) {
   }
 }
 
-async function delete_account(domain, username, form) {
+async function delete_account(username, form) {
   console.info('delete_account');
   
   const action = "delete_account";
   const formData = new FormData();
 
   formData.append("action", action);
-  formData.append("domainName", domain);
   formData.append("username", username);
 
   console.log(formData);
