@@ -28,7 +28,6 @@ if (isset($_POST['target'])) {
 }
 
 if (isset($_POST['password'])) {
-	
 	if ( filter_var($_POST['password'],FILTER_VALIDATE_REGEXP,array( "options"=> array("regexp" => "/.{12,25}/"))) ) {
 		$password = $_POST['password'];
 	} else {
