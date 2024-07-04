@@ -583,7 +583,7 @@ function make_account_deletion_modal(event) {
   parentForm.addEventListener("submit", (event) => {
     event.preventDefault();
     showLoader(formID);
-    delete_account(domain, username, parentForm);
+    delete_account(username, parentForm);
   });
 }
 
