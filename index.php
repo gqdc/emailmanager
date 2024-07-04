@@ -12,7 +12,7 @@ if (isset($_POST['domainName'])) {
 }
 
 if (isset($_POST['username'])) {
-	if ( filter_var($_POST['username'],FILTER_VALIDATE_REGEXP,array( "options"=> array("regexp" => "/^[^_][\w\d]{1}[\w\d\-.]{3,32}$/"))) ) {
+	if ( filter_var($_POST['username'],FILTER_VALIDATE_REGEXP,array( "options"=> array("regexp" => "/^[^_]+[\w\d]{1}[\w\d\-.]{2,32}$/"))) ) {
 		$username = $_POST['username'];
 	} else {
 		exit(json_encode(array('variable' => 'username', 'error' => 'wrong format')));
