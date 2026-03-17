@@ -1,5 +1,6 @@
 const domain = Email.DomainName;
 const accountsList = Email.AccountsList;
+const aliasesList = Email.AliasesList;
 
 /**
  * Adjusts a number to the specified digit.
@@ -56,4 +57,6 @@ function passwordEstimator (password, userinputs) {
 }
 //const debouncedpasswordEstimator = debounce(passwordEstimator, 2000);
 
+make_header(Customer.Infos,Customer.Ressources);
 make_accounts_section(Email.DomainName,Email.AccountsList);
+make_aliases_section(Email.DomainName,Email.AliasesList);

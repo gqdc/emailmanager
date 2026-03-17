@@ -1,20 +1,13 @@
 function make_accounts_section(domain, accountsList) {
   console.info('make_accounts_section ' + domain);
+  console.info(accountsList);
   
-  // RAZ de la section (utile lorsque l'on veut regénérer la liste)
-  //document.querySelector('section#accounts').innerHTML = "";
-
   const tpl = document.querySelector("template#accounts_list");
   const tplSection = document.importNode(tpl.content, true);
   
   const accountsTable = tplSection.querySelector('table');
   const sectionButton = tplSection.querySelector('button#create_email_account');
   const sectionHeader = tplSection.querySelector('header');
-  const sectionHeaderTitle = sectionHeader.querySelector('h2');
-  
-  sectionHeaderTitle.innerText = `Liste des comptes de courriels @${domain}`;
-
-  accountsTable.classList.add('w3-table-all', 'w3-hoverable');
 
   for (const account of accountsList) {
     const accountLine = document.createElement("tr");
@@ -25,20 +18,27 @@ function make_accounts_section(domain, accountsList) {
     const actions = document.createElement("td");
 
     email.textContent = account.username + "@" + account.domain;
-    forward.textContent = account.forward_to
-    quota.innerHTML = floor10(account.bytes/1073741824,'-1') + ' Go / ' + account.quota/1048576 + ' Go<br />' + account.messages + ' Messages'    ;
+    // On retire l'adresse e-mail courante de la liste des aliases du compte, 
+    // car elle est implicitement contenu dans la liste, et qu'il n'est donc pas nécessaire de l'afficher/
+    forward.innerHTML = account.forward_to.replace(','+email.textContent,'').split(`,`).join('<br>');
+
+    usedQuota = floor10(account.bytes/1073741824,'-1');
+    maxQuota = account.quota/1048576;
+    percentQuota = usedQuota/maxQuota*100;
+    
+    quota.innerHTML = `<meter min="0" max="100" low="40" high="80" value="${percentQuota}">${percentQuota}%</meter><br />${usedQuota} Go / ${maxQuota} Go<br /> ${account.messages} Messages`;
     actions.classList.add('w3-center');
 
-    actions.innerHTML = `<button class="w3-button w3-blue" name="editEmail" value="${account.username}@${account.domain}" >éditer</button> `;
+    actions.innerHTML = `<button class="btn btn-warning" name="editEmail" value="${account.username}@${account.domain}" >Éditer</button> `;
  
-    actions.innerHTML += `<button class="w3-button w3-red" name="deleteEmail" value="${account.username}@${account.domain}">supprimer</button>`;
+    actions.innerHTML += `<button class="btn btn-danger" name="deleteEmail" value="${account.username}@${account.domain}">Supprimer</button>`;
 
     accountLine.appendChild(email);
     accountLine.appendChild(forward);
     accountLine.appendChild(quota);
     accountLine.appendChild(actions);
 
-    accountsTable.appendChild(accountLine);
+    accountsTable.querySelector("tbody").appendChild(accountLine);
   }
 
   document.querySelector('section#accounts').append(sectionHeader, accountsTable)
@@ -50,7 +50,8 @@ function make_accounts_section(domain, accountsList) {
   addBtn.addEventListener('click', () => {
     console.log('addBtn');
     make_account_creation_modal();
-    show_account_creation_modal();
+    const modalEmailCreation = new bootstrap.Modal(document.getElementById('modalEmailCreation'));
+    modalEmailCreation.show();
   })
 
   deleteBtn.forEach(button => {
@@ -58,8 +59,15 @@ function make_accounts_section(domain, accountsList) {
     console.log("deleteEmail");
       try {
         console.log(event);
-        let make = await make_account_deletion_modal(event, accountsList);
-        show_account_deletion_modal(event);
+//        let modalID = await make_account_deletion_modal(event, accountsList);
+        let modalID = await make_account_deletion_modal(event);
+        const modalEmailDeletion = new bootstrap.Modal(document.getElementById(modalID));
+        modalEmailDeletion.show();
+
+        document.getElementById(modalID).addEventListener('hidden.bs.modal', function () {
+          modalEmailDeletion.dispose(); // Remove the modal from Bootstrap
+          document.getElementById(modalID).remove(); // .. then remove the modal from the dom.
+        })
       } catch (e) {
         console.log(e);
       }
@@ -68,10 +76,18 @@ function make_accounts_section(domain, accountsList) {
 
   editBtn.forEach(button => {
     button.addEventListener('click', async (event) => {
-      //makeActionModal(accountsList, event);
+      console.log('editBtn');
       try {
-        let make = await make_account_edition_modal(event, accountsList);
-        show_account_edition_modal(event);
+        let modalID = await make_account_edition_modal(event, accountsList);
+        const modalEmailEdition = new bootstrap.Modal(document.getElementById(modalID));
+        modalEmailEdition.show();
+        console.log(modalEmailEdition);
+        
+        document.getElementById(modalID).addEventListener('hidden.bs.modal', function () {
+          modalEmailEdition.dispose(); // Remove the modal from Bootstrap
+          document.getElementById(modalID).remove(); // .. then remove the modal from the dom.
+        })
+
       } catch (e) {
         console.log(e);
       }
@@ -81,66 +97,60 @@ function make_accounts_section(domain, accountsList) {
 
 function make_aliases_section(domain, aliasesList) {
   console.info('make_aliases_section ' + domain);
-  
-  // RAZ de la section (utile lorsque l'on veut regénérer la liste)
-  //document.querySelector('section#aliases').innerHTML = "";
+  console.info(aliasesList);
 
   const tpl = document.querySelector("template#aliases_list");
   const tplSection = document.importNode(tpl.content, true);
-  
   const aliasesTable = tplSection.querySelector('table');
   const sectionButton = tplSection.querySelector('button#create_email_alias');
   const sectionHeader = tplSection.querySelector('header');
-  const sectionHeaderTitle = sectionHeader.querySelector('h2');
-  
-  sectionHeaderTitle.innerText = `Liste des alias @${domain}`;
-
-  aliasesTable.classList.add('w3-table-all', 'w3-hoverable');
 
   for (const alias of aliasesList) {
     const aliasLine = document.createElement("tr");
 
     const email = document.createElement("td");
     const forward = document.createElement("td");
-    const quota = document.createElement("td");
     const actions = document.createElement("td");
 
     email.textContent = alias.username + "@" + alias.domain;
-    forward.textContent = alias.forward_to
-    quota.innerHTML = floor10(alias.bytes/1073741824,'-1') + ' Go / ' + alias.quota/1048576 + ' Go<br />' + alias.messages + ' Messages'    ;
-    actions.classList.add('w3-center');
+    forward.innerHTML = alias.forward_to.split(`,`).join('<br>');
 
-    actions.innerHTML = `<button class="w3-button w3-blue" name="editAlias" value="${alias.username}@${alias.domain}" >éditer</button> `;
- 
-    actions.innerHTML += `<button class="w3-button w3-red" name="deleteAlias" value="${alias.username}@${alias.domain}">supprimer</button>`;
+    actions.innerHTML = `<button class="btn btn-warning" name="editAlias" value="${alias.username}@${alias.domain}" >Éditer</button> `;
+    actions.innerHTML += `<button class="btn btn-danger" name="deleteAlias" value="${alias.username}@${alias.domain}">Supprimer</button>`;
 
     aliasLine.appendChild(email);
     aliasLine.appendChild(forward);
-    aliasLine.appendChild(quota);
     aliasLine.appendChild(actions);
 
-    aliasesTable.appendChild(aliasLine);
+    aliasesTable.querySelector("tbody").appendChild(aliasLine);
   }
 
   document.querySelector('section#aliases').append(sectionHeader, aliasesTable)
   
   let addBtn = document.getElementById('create_email_alias');
-  let deleteBtn = document.querySelectorAll('button[name=deleteEmail');
-  let editBtn = document.querySelectorAll('button[name=editEmail');
+  let deleteBtn = document.querySelectorAll('button[name=deleteAlias');
+  let editBtn = document.querySelectorAll('button[name=editAlias');
 
   addBtn.addEventListener('click', () => {
     console.log('addBtn');
     make_alias_creation_modal();
-    show_alias_creation_modal();
+    const modalAliasCreation = new bootstrap.Modal(document.getElementById('modalAliasCreation'));
+    modalAliasCreation.show();    
   })
 
   deleteBtn.forEach(button => {
     button.addEventListener('click', async (event) => {
-    console.log("deleteEmail");
+    console.log("deleteAlias");
       try {
         console.log(event);
-        let make = await make_alias_deletion_modal(event, aliasesList);
-        show_alias_deletion_modal(event);
+        //let modalID = await make_alias_deletion_modal(event, aliasesList);
+        let modalID = await make_account_deletion_modal(event);
+        const modalAliasDeletion = new bootstrap.Modal(document.getElementById(modalID));
+        modalAliasDeletion.show();
+        document.getElementById(modalID).addEventListener('hidden.bs.modal', function () {
+          modalAliasDeletion.dispose(); // Remove the modal from Bootstrap
+          document.getElementById(modalID).remove(); // .. then remove the modal from the dom.
+        })
       } catch (e) {
         console.log(e);
       }
@@ -149,10 +159,18 @@ function make_aliases_section(domain, aliasesList) {
 
   editBtn.forEach(button => {
     button.addEventListener('click', async (event) => {
-      //makeActionModal(aliasesList, event);
+      console.log('editBtn');
       try {
-        let make = await make_alias_edition_modal(event, aliasesList);
-        show_alias_edition_modal(event);
+        let modalID = await make_alias_edition_modal(event, aliasesList);
+        const modalAliasEdition = new bootstrap.Modal(document.getElementById(modalID));
+        modalAliasEdition.show();
+        console.log(modalAliasEdition);
+        
+        document.getElementById(modalID).addEventListener('hidden.bs.modal', function () {
+          modalAliasEdition.dispose(); // Remove the modal from Bootstrap
+          document.getElementById(modalID).remove(); // .. then remove the modal from the dom.
+        })
+
       } catch (e) {
         console.log(e);
       }
@@ -160,242 +178,62 @@ function make_aliases_section(domain, aliasesList) {
   })
 }
 
-async function update_accounts_section(domain,accountList=null) {
+async function update_accounts_section(domain,accountList) {
   console.info('update_accounts_section ' + domain);
-  if (accountList) {
-    console.info('with ' + accountList);
-  }
-  // RAZ de la section (utile lorsque l'on veut regénérer la liste)
   document.querySelector('section#accounts').innerHTML = "";
-
-  const tpl = document.querySelector("template#accounts_list");
-  const tplSection = document.importNode(tpl.content, true);
-  
-  const accountsTable = tplSection.querySelector('table');
-  const sectionButton = tplSection.querySelector('button#create_email_account');
-  const sectionHeader = tplSection.querySelector('header');
-  const sectionHeaderTitle = sectionHeader.querySelector('h2');
-  
-  sectionHeaderTitle.innerText = `Liste des comptes de courriels @${domain}`;
-
-  accountsTable.classList.add('w3-table-all', 'w3-hoverable');
-
-  try {
-    const accountsList = await fetchAccountsList(domain)
-
-    if (accountsList) {
-      for (const account of accountsList) {
-        const accountLine = document.createElement("tr");
-        
-        // Si le compte est désactivé, on applique la classe "inactive" au <tr>
-        /*if ( account.active == 0 ) {
-          accountLine.classList.add('inactive');
-        }*/
-
-        const email = document.createElement("td");
-        const forward = document.createElement("td");
-        const quota = document.createElement("td");
-        const actions = document.createElement("td");
-
-        email.textContent = account.username + "@" + account.domain;
-        forward.textContent = account.forward_to
-        quota.innerHTML = floor10(account.bytes/1073741824,'-1') + ' Go / ' + account.quota/1048576 + ' Go<br />' + account.messages + ' Messages'    ;
-        actions.classList.add('w3-center');
-
-        actions.innerHTML = `<button class="w3-button w3-blue" name="editEmail" value="${account.username}@${account.domain}" >éditer</button> `;
-     
-        /*if ( account.active == 0 ) {
-            actions.innerHTML += `<button class="w3-button" name="activateEmail" value="${account.username}@${account.domain}">activer</button>`;
-        } else {
-            actions.innerHTML += `<button class="w3-button" name="deactivateEmail" value="${account.username}@${account.domain}">désactiver</button>`;
-        }*/
-
-        actions.innerHTML += `<button class="w3-button w3-red" name="deleteEmail" value="${account.username}@${account.domain}">supprimer</button>`;
-
-        accountLine.appendChild(email);
-        accountLine.appendChild(forward);
-        accountLine.appendChild(quota);
-        accountLine.appendChild(actions);
-
-        accountsTable.appendChild(accountLine);
-      }
-
-
-      document.querySelector('section#accounts').append(sectionHeader, accountsTable)
-      
-      let addBtn = document.getElementById('create_email_account');
-      let deleteBtn = document.querySelectorAll('button[name=deleteEmail');
-      let editBtn = document.querySelectorAll('button[name=editEmail');
-
-      addBtn.addEventListener('click', () => {
-        console.log('addBtn');
-        make_account_creation_modal();
-        show_account_creation_modal();
-      })
-
-      deleteBtn.forEach(button => {
-        button.addEventListener('click', async (event) => {
-        console.log("deleteEmail");
-          try {
-            console.log(event);
-            let make = await make_account_deletion_modal(event, accountsList);
-            show_account_deletion_modal(event);
-          } catch (e) {
-            console.log(e);
-          }
-        })
-      })
-
-      editBtn.forEach(button => {
-        button.addEventListener('click', async (event) => {
-          //makeActionModal(accountsList, event);
-          try {
-            let make = await make_account_edition_modal(event, accountsList);
-            show_account_edition_modal(event);
-          } catch (e) {
-            console.log(e);
-          }
-        })
-      })
-    }   
-  } catch (e) {
-    console.error(e);
-  }
+  make_accounts_section(domain, accountsList);
 }
 
-async function make_account_edition_modal(event, accountsList) {
-  console.info('make_account_edition_modal');
+async function update_aliases_section(domain,aliasesList) {
+  console.info('update_aliases_section ' + domain);
+  document.querySelector('section#aliases').innerHTML = "";
+  make_aliases_section(domain, aliasesList);
+}
 
-  const formID = 'email_password';
+
+async function make_account_edition_modal(event, accountsList) {
+  console.info('make_account_edition_modal ' + event );
+
+  const formID = 'emailEdition';
   let emailAddress = event.target.value
   let username = emailAddress.split('@')[0];
-  let domain = emailAddress.split('@')[1];
-
-  if (accountsList === undefined) {
-    console.info('fetchAccountList');
-    try {
-      let accountsList = await fetchAccountList(domain);
-      console.log(accountsList);
-    } catch (e) {
-      console.error('Error: ', e);
-    }
-  }
+  //let domain = emailAddress.split('@')[1];
+  let domain = Email.DomainName;
+  let modalID = `modalEmailEdition`;
   
-  try {
-    const account = await fetchAccountInformations(domain, username, accountsList);
+  if ( document.getElementById(modalID)) {
+    return modalID;
+  } 
+  else {
+    try {
+      const account = await fetchItemInformations(domain, username);
 
-    if (account) {
-      const template = document.querySelector("#account_informations_modal");
-      const modal = document.importNode(template.content, true);
+      if (account) {
+        const template = document.querySelector("#account_edition_modal");
+        const modal = document.importNode(template.content, true);
 
-      modal.querySelector('div').id = "modal_" + username + "@" + domain;        
-      modal.querySelector('header h2').innerText = "Configuration - " + emailAddress;
+        modal.querySelector('div').id = modalID;
+        modal.querySelector('h2.modal-title').innerText = emailAddress;
 
-      let closeBtn = document.createElement('span');
-      closeBtn.classList = "w3-button w3-display-topright w3-xlarge w3-hover-red";
-      closeBtn.innerHTML = "&times;";
+        // Form submission
+        const parentForm = modal.querySelector(`form#${formID}`);
+        const submitButton = modal.querySelector(`button[form=${formID}]`);
+        submitButton.addEventListener("click", (event) => {
+          event.preventDefault();
+          console.log(parentForm);
+          showLoader('modalEmailEdition');
+          edit_account(parentForm,username,domain);
+        });  
 
-      modal.querySelector('header h2').append(closeBtn); 
-
-      // Formulaire redirection e-mail
-      // Construction de la liste de redirection
-      modal.querySelector('select').id = "redirect_" + username + "@" + domain;
-
-      for (const redirection of accountsList) {
-        if ( redirection.username !== username) {
-          option = document.createElement("option");
-          option.value = redirection.username + "@" + redirection.domain;
-          option.innerText = redirection.username + "@" + redirection.domain;
+        document.querySelector('body').append(modal);
+        add_password_inputs(formID, username, domain);
+        add_alias_input(formID,account.forward_to);
         
-          // Si le compte est redirigé, on selectionne la cible de redirection
-          if ( account.forward_to === redirection.username + "@" + redirection.domain) {
-            option.setAttribute('selected', true);
-          }
-          modal.querySelector('select').append(option);
-        }
+        return modalID;
       }
-
-      if (account.forward_to !== "") {
-        modal.querySelector('input#email_redirect_false').checked = false;
-        modal.querySelector('input#email_redirect_true').checked = true;
-        modal.querySelector('div#redirect_target_list').style.display = "block";
-      } else {
-        modal.querySelector('input#email_redirect_false').checked = true;
-        modal.querySelector('input#email_redirect_true').checked = false;
-        modal.querySelector('div#redirect_target_list').style.display = "none";
-      }
-
-      document.querySelector('body').append(modal);
-
-      // Active ou non la liste de sélection des cibles de redirection
-      // en fonction de l'état des boutons radios.
-      let radioRedirect = document.querySelectorAll('input[name="email_redirect"]');
-      let registeredRadioRedirect = document.querySelector('input[name="email_redirect"]:checked').value;
-      let buttonSendFormRedirect = document.querySelector('button[name="send_email_redirect"]');
-      let formRedirect = document.getElementById('email_redirect');
-      let selectRedirect = document.querySelector('select[name=redirectTarget]');
-      let registeredOptionIndex = selectRedirect.selectedIndex;
-
-      radioRedirect.forEach(radio => {
-        // Active le bouton "Confirmer" de la partie "Rediriger"
-        // lors d'un changement sur le bouton "Rediriger les e-mails"
-        radio.addEventListener('change', (event => {
-          let checkedRadioRedirect = document.querySelector('input[name="email_redirect"]:checked').value;      
-          if (checkedRadioRedirect !== registeredRadioRedirect) {
-            buttonSendFormRedirect.removeAttribute('disabled');
-          } else {
-            buttonSendFormRedirect.setAttribute('disabled',true);
-          }
-
-          // Reset de l'option sélectionnée dans le select "redirectTarget"
-          selectRedirect.selectedIndex = registeredOptionIndex;
-          console.warn("Reset de l'option sélectionnée dans le select redirectTarget");
-
-          if (document.querySelector('div#redirect_target_list').style.display === "none") {
-            document.querySelector('div#redirect_target_list').style.display = "block";
-          } else {
-            document.querySelector('div#redirect_target_list').style.display = "none";
-          }
-
-          // Masque la check mark de confirmation d'envoi du formulaire
-          formRedirect.querySelector('span.status_box').style.display = "none";
-        }))
-      })
-
-      // Active le bouton "Confirmer" de la partie "Rediriger" si l'option change.
-      // Désactive le bouton si l'option est celle par défaut.
-      selectRedirect.addEventListener('change', (event) => {
-        let selectedOptionIndex = document.querySelector('select[name=redirectTarget]').selectedIndex;
-        if (selectedOptionIndex !== registeredOptionIndex) {
-          buttonSendFormRedirect.removeAttribute('disabled');
-        } else {
-          buttonSendFormRedirect.setAttribute('disabled',true);
-        }
-
-        // Masque la check mark de confirmation d'envoi du formulaire
-        formRedirect.querySelector('span.status_box').style.display = "none";
-      })
-
-      // Soumission du formulaire de redirection
-      formRedirect.addEventListener("submit", (event) => {
-        event.preventDefault();
-        showLoader(formRedirect.id);
-        setRedirection(domain, username, formRedirect);
-
-        console.log(formRedirect);
-        // Mise à jour du select si on a changé la cible de redirection
-        selectRedirect[registeredOptionIndex].removeAttribute('selected');
-        selectRedirect[selectRedirect.selectedIndex].setAttribute('selected', true);
-        registeredOptionIndex = selectRedirect.selectedIndex;
-
-        // Mise à jour du bouton radio
-        registeredRadioRedirect = document.querySelector('input[name="email_redirect"]:checked').value;
-      });
-
-      add_password_inputs(formID, username, domain);
+    } catch (error) {
+      console.error('Erreur :', error);
     }
-  } catch (error) {
-    console.error('Erreur :', error);
   }
 }
 
@@ -406,14 +244,10 @@ function comparePasswords(formID) {
   let inputPassword = passwordInputs[0];
   let inputPasswordVerify = passwordInputs[1];
 
-  //let passwordFormButton = document.querySelector("button[name='send_email_password']");
-
   if (inputPassword.value === inputPasswordVerify.value) {
-    //passwordFormButton.disabled = false;
     enable_form_button(formID)
     return true;
   } else {
-    //passwordFormButton.disabled = true;
     disable_form_button(formID)
     return false;
   }
@@ -445,24 +279,6 @@ function debounce(func, wait, immediate) {
   };
 }
 
-function show_account_edition_modal(event) {
-  const emailaddress = event.target.value;
-  
-  const modal = document.getElementById("modal_" + emailaddress);
-  const closeBtn = modal.querySelector('header span');
-  closeBtn.addEventListener('click', function(){
-    mask_account_edition_modal(emailaddress);
-  });
-
-  modal.style.display='block';
-}
-
-function mask_account_edition_modal(emailaddress) {
-  const modal = document.getElementById("modal_" + emailaddress);
-  modal.style.display='none';
-  modal.remove();
-}
-
 async function refreshAccountInformations(domain, username, action) {
   console.info('refreshAccountInformations');
 
@@ -474,7 +290,7 @@ async function refreshAccountInformations(domain, username, action) {
   for (const line of tableLines) {
     if (line.firstElementChild.textContent === `${username}@${domain}`) {
       try {
-        const account = await fetchAccountInformations(domain, username)
+        const account = await fetchItemInformations(domain, username)
 
         let cells = line.getElementsByTagName('td');
 
@@ -505,174 +321,111 @@ async function refreshAccountInformations(domain, username, action) {
 }
 
 function make_account_creation_modal() {
-  const formID = "email_creation";
+  const formID = "emailCreation";
   const template = document.querySelector("#account_creation_modal");
   const modal = document.importNode(template.content, true);
 
-  modal.querySelector('div').id = "modal_account_creation";
-  modal.querySelector('header h2').innerText = "Ajouter un compte"
+  if (document.getElementById('modalEmailCreation')) {
+    document.getElementById('modalEmailCreation').remove();
+  }
 
-  let closeBtn = document.createElement('span');
-  closeBtn.classList = "w3-button w3-display-topright w3-xlarge w3-hover-red";
-  closeBtn.innerHTML = "&times;";
-
-  modal.querySelector('header h2').append(closeBtn);  
+  modal.querySelector('div').id = "modalEmailCreation";
   document.querySelector('body').append(modal);
 
   // Username
-
-  let usernameInput = document.getElementById('username');
-  let usernameStatusBox = document.getElementById('username_infos');
-  let usernameRequirementsBox = document.getElementById('username_requirements');
-  let usernameScoreBox = document.getElementById('username_score');
-  let usernameWarningBox = document.getElementById('username_warning');
-
-  usernameInput.addEventListener("keyup", debounce(async function(event){
-    usernameRequirementsBox.innerHTML = "";
-    usernameScoreBox.innerHTML = "";
-    usernameWarningBox.innerHTML = "";
-
-    usernameRequirementsBox.style.display = "none";
-    usernameScoreBox.style.display = "none";
-    usernameWarningBox.style.display = "none";
-
-    if (usernameInput.value.length > 0) {
-      usernameStatusBox.classList.add("w3-ul");
-      usernameStatusBox.style.display = "block";
-
-      usernameRequirementsBox.innerHTML = '<img src="img/information-help.svg" height="22" width="22"> 4 caractères minimum';
-      usernameRequirementsBox.style.display = "inherit";
-
-      if (usernameInput.value.length > 3) {
-        usernameRequirementsBox.innerHTML = "";
-        usernameRequirementsBox.style.display = "none";
-
-        try {
-          let accountExistence = await get_account_informations(document.querySelector(`form#${formID}`));  
-          if (accountExistence.length != 0) {
-            if (accountExistence.error) {
-              console.log(accountExistence);
-              usernameWarningBox.innerHTML = `<img src="img/warning-signs.svg" height="22" width="22" alt="Attention"> ${accountExistence.error}`;
-              usernameWarningBox.style.display = "inherit";
-            } else {
-                if (accountExistence[0]['active'] == 1) {
-                  console.log("Le compte existe déjà");
-                  usernameScoreBox.innerHTML = `<img src="img/warning-signs.svg" height="22" width="22" alt="Success"> Le nom d'utilisateur est déjà utilisé`;
-                  usernameScoreBox.style.display = "inherit";      
-                } else {
-                  console.log(accountExistence);
-                  usernameWarningBox.innerHTML = `<img src="img/warning-signs.svg" height="22" width="22" alt="Attention"> Erreur inconnu`;
-                  usernameWarningBox.style.display = "inherit";    
-                }              
-            }
-          } else if (accountExistence.length == 0) {
-            console.log("Le compte n'existe pas");
-            usernameScoreBox.innerHTML = `<img src="img/checked-success.svg" height="22" width="22" alt="Success"> nom d'utilisateur valide`;
-            usernameScoreBox.style.display = "inherit";
-
-            usernameWarningBox.innerHTML = "";
-            usernameWarningBox.style.display = "none";
-          }
-      } catch {
-
-        }
-      }
-    } else {
-      usernameRequirementsBox.innerHTML = '<img src="img/information-help.svg" height="22" width="22"> 4 caractères minimum';
-      usernameRequirementsBox.style.display = "inherit";
-    }
-  }, 500));
+  add_username_input(formID)
 
   // Password
   add_password_inputs(formID, username, domain);
+
+  // Redirection 
+  add_alias_input(formID);
   
   // Form submission
   const parentForm = document.querySelector(`form#${formID}`);
-  parentForm.addEventListener("submit", (event) => {
+  const submitButton = document.querySelector(`button[form=${formID}]`);
+  submitButton.addEventListener("click", (event) => {
     event.preventDefault();
-    showLoader(formID);
+    console.log(parentForm);
+    showLoader('modalEmailCreation');
     add_account(parentForm);
   });
 }
 
-function mask_account_creation_modal() {
-  const modal = document.getElementById("modal_account_creation");
-  modal.style.display='none';
-  modal.remove();
-}
-
-function show_account_creation_modal() {
-  const modal = document.getElementById("modal_account_creation");
-  const closeBtn = modal.querySelector('header span');
-  closeBtn.addEventListener('click', function(){
-    mask_account_creation_modal();
-  });
-
-  modal.style.display='block';
-}
-
 function make_account_deletion_modal(event) {
+  
+  const formID = 'emailDeletion';
   let emailAddress = event.target.value
   let username = emailAddress.split('@')[0];
   let domain = emailAddress.split('@')[1];
+  let itemType = event.target.name;
+  let modalID = 'modalEmailDeletion';
 
-  const formID = "email_deletion";
   const template = document.querySelector("#account_deletion_modal");
-  const modal = document.importNode(template.content, true);
+  const modal = document.importNode(template.content, true);       
+  modal.querySelector('h2.modal-title').innerText = emailAddress;
 
-  modal.querySelector('div').id = "modal_account_deletion";
-  modal.querySelector('header h2').innerText = "Suppression - " + emailAddress;
-  modal.querySelector('h3').innerText = "Êtes-vous sûre de supprimer " + emailAddress + "?";
-
-  let closeBtn = document.createElement('span');
-  closeBtn.classList = "w3-button w3-display-topright w3-xlarge w3-hover-red";
-  closeBtn.innerHTML = "&times;";
-
-  modal.querySelector('header h2').append(closeBtn); 
-
-  document.querySelector('body').append(modal);
-
-  let radioDelete = document.querySelectorAll('input[name="email_delete"]');
-  let buttonSendFormDelete = document.querySelector('button[name="send_email_deletion"]');
-
-  radioDelete.forEach(radio => {
-    // Active le bouton "Confirmer" de la partie "Rediriger"
-    // lors d'un changement sur le bouton "Rediriger les e-mails"
-    radio.addEventListener('change', (event => {
-      let checkedRadioDelete = document.querySelector('input[name="email_delete"]:checked').value;
-      console.log(checkedRadioDelete);
-      if (checkedRadioDelete == "true") {
-        buttonSendFormDelete.removeAttribute('disabled');
-      } else {
-        buttonSendFormDelete.setAttribute('disabled',true);
-      }
-    }))
-  })
-
-  const parentForm = document.querySelector(`form#${formID}`);
+  const parentForm = modal.querySelector(`form#${formID}`);
   
-  // Soumission du formulaire de création de compte mail
+  // Soumission du formulaire de suppression de compte mail
   parentForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    showLoader(formID);
-    delete_account(username, parentForm);
-  });
-}
-
-function mask_account_deletion_modal() {
-  const modal = document.getElementById("modal_account_deletion");
-  modal.style.display='none';
-  modal.remove();
-}
-
-function show_account_deletion_modal() {
-  const modal = document.getElementById("modal_account_deletion");
-  const closeBtn = modal.querySelector('header span');
-  closeBtn.addEventListener('click', function(){
-    mask_account_deletion_modal();
+    showLoader(modalID);
+    console.log(event);
+    delete_account(parentForm,username,domain,itemType);
   });
 
-  modal.style.display='block';
+  document.querySelector('body').append(modal);
+  add_deletion_input(formID, itemType);
+
+  return modalID;
+}
+
+async function make_alias_edition_modal(event, aliasesList) {
+  console.info('make_alias_edition_modal');
+
+  const formID = 'aliasEdition';
+  let emailAddress = event.target.value
+  let username = emailAddress.split('@')[0];
+  let domain = emailAddress.split('@')[1];
+  let modalID = `modalAliasEdition`;
+  
+  if ( document.getElementById(modalID)) {
+    return modalID;
+  } 
+  else {
+    try {
+      const alias = await fetchItemInformations(domain, username, 'alias');
+
+      if (alias) {
+        
+        const template = document.querySelector("#alias_edition_modal");
+        const modal = document.importNode(template.content, true);
+
+        //modal.querySelector('div').id = "modal_" + username + domain;
+        modal.querySelector('div').id = modalID;
+        modal.querySelector('h2.modal-title').innerText = emailAddress;
+
+        // Form submission
+        const parentForm = modal.querySelector(`form#${formID}`);
+        const submitButton = modal.querySelector(`button[form=${formID}]`);
+        submitButton.addEventListener("click", (event) => {
+          event.preventDefault();
+          console.log(parentForm);
+          showLoader('modalAliasEdition');
+          edit_alias(parentForm,username,domain);
+        });  
+
+        document.querySelector('body').append(modal);
+        add_alias_input(formID,alias.forward_to);
+        
+        return modalID;
+      }
+
+    } catch (error) {
+      console.error('Erreur :', error);
+    }
+  }
 }
 
 function add_password_inputs(formID, username=null, domain=null) {
@@ -686,11 +439,17 @@ function add_password_inputs(formID, username=null, domain=null) {
   let passwordFormInputPassword = passwordFormInputs[0];
   let passwordFormInputPasswordVerify = passwordFormInputs[1];
 
-  let passwordRequirementsBox = password_inputs.getElementById('password_requirements');
-  let passwordStatusBox = password_inputs.getElementById('password_infos');
-  let passwordScoreBox = password_inputs.getElementById('password_score');
-  let passwordSuggestionBox = password_inputs.getElementById('password_suggestion');
-  let passwordWarningBox = password_inputs.getElementById('password_warning');
+  let passwordRequirementLenghtBox = password_inputs.querySelector('#password-requirements-length');
+  let passwordRequirementLenghtIcon = password_inputs.querySelector('#password-requirements-length i');
+
+  let passwordScoreBox = password_inputs.getElementById('password-requirements-score');
+  let passwordScoreIcon = passwordScoreBox.querySelector('i');
+  let passwordScoreInfos = passwordScoreBox.querySelector('span');
+
+  /*let passwordWarningBox = password_inputs.getElementById('password-requirements-warning');
+  let passwordWarningIcon = passwordWarningBox.querySelector('i');
+  let passwordWarningInfos = passwordWarningBox.querySelector('span');*/
+  
   let buttonParagraph = password_inputs.querySelector('p');
 
   if (formID != "email_password") {
@@ -704,26 +463,16 @@ function add_password_inputs(formID, username=null, domain=null) {
   passwordFormInputPassword.addEventListener("keyup", debounce(function(event){
     passwordFormInputPasswordVerify.disabled = true;
 
-    passwordRequirementsBox.innerHTML = "";
-    passwordScoreBox.innerHTML = "";
-    passwordSuggestionBox.innerHTML = "";
-    passwordWarningBox.innerHTML = "";
+    passwordRequirementLenghtIcon.classList = "bi bi-info-circle";
 
-    passwordRequirementsBox.style.display = "none";
+    passwordScoreInfos.innerHTML = "";
     passwordScoreBox.style.display = "none";
-    passwordSuggestionBox.style.display = "none";
-    passwordWarningBox.style.display = "none";
 
     if (passwordFormInputPassword.value.length > 0) {
-      passwordStatusBox.classList.add("w3-ul");
-      passwordStatusBox.style.display = "block";
-
-      passwordRequirementsBox.innerHTML = '<img src="img/information-help.svg" height="22" width="22"> 12 caractères minimum';
-      passwordRequirementsBox.style.display = "inherit";
-
+      
       if (passwordFormInputPassword.value.length >= 12 ) {
-        passwordRequirementsBox.innerHTML = "";
-        passwordRequirementsBox.style.display = "none";
+        passwordRequirementLenghtBox.classList = 'visually-hidden';
+        passwordRequirementLenghtIcon.classList = 'bi bi-check-circle';
         passwordScoreBox.style.display= "inherit";
 
         passwordTestResult = passwordEstimator(passwordFormInputPassword.value, [username,domain]);
@@ -732,64 +481,54 @@ function add_password_inputs(formID, username=null, domain=null) {
 
         switch (passwordTestResult.score) {
           case 0:
-            passwordScoreBox.innerHTML = 'Fiabilité du mot de passe : <strong>Très faible</strong>';
-            passwordScoreBox.classList = "w3-tag, w3-large, w3-red";
+            passwordScoreInfos.innerHTML = 'Fiabilité du mot de passe : <strong>faible</strong>';
+            passwordScoreIcon.classList = "bi bi-x-circle";
+            passwordScoreBox.classList = "text-danger";
 
             break;
           case 1:
-            passwordScoreBox.innerHTML = 'Fiabilité du mot de passe : <strong>faible</strong>';
-            passwordScoreBox.classList = "w3-tag, w3-large, w3-red";
+            passwordScoreInfos.innerHTML = 'Fiabilité du mot de passe : <strong>faible</strong>';
+            passwordScoreIcon.classList = "bi bi-x-circle";
+            passwordScoreBox.classList = "text-danger";
 
             break;
           case 2:
-            passwordScoreBox.innerHTML = 'Fiabilité du mot de passe : <strong>moyenne</strong>';
-            passwordScoreBox.classList = "w3-tag, w3-large, w3-orange";
+            passwordScoreInfos.innerHTML = 'Fiabilité du mot de passe : <strong>faible</strong>';
+            passwordScoreIcon.classList = "bi bi-x-circle";
+            passwordScoreBox.classList = "text-danger";
 
             break;
           case 3:
-            passwordScoreBox.innerHTML = 'Fiabilité du mot de passe : <strong>bonne</strong>';
-            passwordScoreBox.classList = "w3-tag, w3-large, w3-yellow";
+            passwordScoreInfos.innerHTML = 'Fiabilité du mot de passe : <strong>bonne</strong>';
+            passwordScoreIcon.classList = 'bi bi-check-circle';
+            passwordScoreBox.classList = 'text-success-emphasis';
 
             passwordFormInputPasswordVerify.disabled = false;
 
             break;
           case 4:
-            passwordScoreBox.innerHTML = 'Fiabilité du mot de passe : <strong>excellente</strong>';
-            passwordScoreBox.classList = "w3-tag, w3-large, w3-green";
+            passwordScoreInfos.innerHTML = 'Fiabilité du mot de passe : <strong>bonne</strong>';
+            passwordScoreIcon.classList = 'bi bi-check-circle text-success-emphasis';
+            passwordScoreBox.classList = 'text-success-emphasis';
 
             passwordFormInputPasswordVerify.disabled = false;
 
             break;
         }
 
-        if (passwordTestResult.feedback.warning !== null) {
+        /*if (passwordTestResult.feedback.warning !== null) {
           console.log(passwordTestResult.feedback.warning);
-          passwordWarningBox.innerHTML = `<img src="img/warning-signs.svg" height="22" width="22" alt="Attention"> ${passwordTestResult.feedback.warning}`;
-          passwordWarningBox.style.display = "inherit";
+          passwordWarningIcon.classList = 'bi bi-info-circle' 
+          passwordWarningInfos.innerHTML = passwordTestResult.feedback.warning;
         } else {
-          passwordWarningBox.innerHTML = "";
-        }
-        
-        if ( passwordTestResult.feedback.suggestions.length > 0 ) {
-          console.log(passwordTestResult.feedback.suggestions);
-          suggestionsList = document.createElement('ul');
-          suggestionsList.style.paddingLeft = '0px';
-          passwordSuggestionBox.appendChild(suggestionsList);
-          
-          passwordTestResult.feedback.suggestions.forEach(function (element) {
-            let suggestion = document.createElement('li');
-            suggestion.style.paddingLeft = '0px';
-            suggestion.innerHTML = `<img src="img/information-help.svg" height="22" width="22" alt="Conseils"> ${element}`;
-            passwordSuggestionBox.appendChild(suggestion);
-          });
-
-          passwordSuggestionBox.style.display = "inherit";
-        } else {
-          passwordSuggestionBox.innerHTML = "";
-        }
+          passwordWarningInfos.innerHTML = "";
+        }*/
+      } else {
+          passwordRequirementLenghtBox.classList = 'text-danger';
+          passwordRequirementLenghtIcon.classList = 'bi bi-x-circle';
       }
     } else {
-        passwordStatusBox.style.display = "none";
+      passwordRequirementLenghtBox.classList = 'text-info-emphasis';
     }    
   },500));
 
@@ -809,139 +548,316 @@ function add_password_inputs(formID, username=null, domain=null) {
 }
 
 function enable_form_button(formID) {
-  let parentForm = document.getElementById(formID);
-  let formButton = parentForm.querySelector(`button[form=${formID}]`);
-
+  let formButton = document.querySelector(`button[form=${formID}]`);
   formButton.disabled = false;
 }
 
 function disable_form_button(formID) {
-  let parentForm = document.getElementById(formID);
-  let formButton = parentForm.querySelector(`button[form=${formID}]`);
-
+  let formButton = document.querySelector(`button[form=${formID}]`);
   formButton.disabled = true;
 }
 
-function add_aliases_input(formID, domain=null) {
+function add_alias_input(formID, aliasesList=null) {
+  console.log(formID);
   const parentForm = document.getElementById(formID);
-  const template = document.querySelector("#aliases_input");
-  const aliases_input = document.importNode(template.content, true);
+  const template = document.querySelector("#alias_input");
+  const templateContent = document.importNode(template.content, true);
   const aliasesFieldset = parentForm.querySelector("fieldset[name='aliases']");
 
-  let buttonParagraph = aliases_input.querySelector("button[name='send_email_aliases']").closest('p');
-  let radiosParagraph = aliases_input.querySelector("input[name='email_redirect']").closest('p');
+  let radiosDiv = templateContent.querySelector("input[name='email_redirect']").closest('div');
+  let radioInputGroup = templateContent.querySelectorAll("input[name='email_redirect']");
+  let radioTrue = templateContent.querySelector("input[name='email_redirect'][value='true']");
+  let radioFalse = templateContent.querySelector("input[name='email_redirect'][value='false']");
 
-  if (formID != "email_edition") {
-    buttonParagraph.remove();
-    radiosParagraph.remove();
+  let aliasesSectionFieldset = templateContent.querySelector("fieldset");
+  let aliasesInput = templateContent.getElementById('aliases');
+  let aliasesStatusBox = templateContent.getElementById('aliases_infos');
+  let aliasesTargetList = templateContent.getElementById('targets-list');
+  let aliasesTargetFormat = templateContent.getElementById('targets-requirements-format');
+  let aliasesTargetCount = templateContent.getElementById('targets-requirements-count');
+  switch(formID) {
+    case "aliasCreation":
+      radiosDiv.remove();
+      break;
+    case "aliasEdition":
+      radiosDiv.remove();
+      aliasesInput.value = aliasesList;
+      break;
+    default:
+      /*
+       * Chercher si le compte mail ou l'alias a déjà des redirections.
+       * Choisir "oui" ou "non" en fonction du résultat,
+       * Inscrire la liste des redirections dans le input text et déclencher une vérification du champ.
+       */
+      if (aliasesList) {
+        radioTrue.checked = true;
+        radioFalse.checked = false;
+        aliasesInput.value = aliasesList;
+        aliasesSectionFieldset.classList.toggle('visually-hidden',false);
+      } else {
+        radioTrue.checked = false;
+        radioFalse.checked = true;
+        aliasesSectionFieldset.classList.toggle('visually-hidden',true);
+      }
   }
 
-  aliasesFieldset.appendChild(aliases_input);
+  radioInputGroup.forEach(inputRadio => {
+    inputRadio.addEventListener('click', () => {
+      console.log(inputRadio);
+      if (radioTrue.checked === true) {
+        aliasesSectionFieldset.classList.toggle('visually-hidden',false);
+      }
+      if (radioFalse.checked === true) {
+        aliasesSectionFieldset.classList.toggle('visually-hidden',true);
+      }
+    });
+  })
+
+  aliasesInput.addEventListener("keyup", debounce(async function(event){
+    disable_form_button(formID);
+    makeAliasesListFromInputText(formID,aliasesFieldset);
+  }, 500));
+
+  aliasesFieldset.appendChild(templateContent);
+  if (aliasesList) {
+    makeAliasesListFromInputText(formID,aliasesFieldset);
+  }
+}
+
+function makeAliasesListFromInputText(formID,fieldset) {
+      console.log(fieldset);
+      const aliasesInput = fieldset.querySelector('#aliases');
+      const aliasesInputLabel = fieldset.querySelector('label[for="aliases"]');
+      const aliasesTargetList = fieldset.querySelector('#targets-list');
+      const aliasesTargetFormat = fieldset.querySelector('#targets-requirements-format');
+      
+      aliasesTargetList.innerHTML = "";
+
+      if (aliasesInput.value.length > 0) {
+        if (aliasesInput.value.length > 3) {
+          let aliases = alias_validation(formID);
+
+          if (aliases) {
+            if (aliases.length >= 1) {
+              aliasesTargetFormat.classList.toggle('visually-hidden', false);
+              aliasesInputLabel.innerHTML = `Cible(s) de redirection (${aliases.length}/10)`;
+              if (aliases.length > 1) {
+                aliasesTargetFormat.classList.toggle('visually-hidden', true);
+              }
+              if (aliases.length > 10) {
+                disable_form_button(formID);
+                aliasesInputLabel.innerHTML += ' <i class="bi bi-x-circle text-danger"></i>';
+              } else {
+                enable_form_button(formID);
+                aliases.forEach((alias) => aliasesTargetList.innerHTML += `<div class="text-nowrap overflow-x-hidden"><i class="bi bi-check-circle"> ${alias}</i></div>`);
+              }
+            } else {
+              aliasesTargetFormat.classList.toggle('visually-hidden', true);
+            }
+          } else {
+            aliasesTargetFormat.classList.toggle('visually-hidden', false);
+
+          }
+        }
+      } else {
+        aliasesTargetFormat.classList.toggle('visually-hidden', false);
+        aliasesInputLabel.innerText= `Cible(s) de redirection (0/10)`;
+      }
 }
 
 function make_alias_creation_modal() {
-  const formID = "aliases_creation";
+  const formID = "aliasCreation";
   const template = document.querySelector("#alias_creation_modal");
   const modal = document.importNode(template.content, true);
 
-  modal.querySelector('div').id = "modal_alias_creation";
-  modal.querySelector('header h2').innerText = "Ajouter un alias"
+  if (document.getElementById("modalAliasCreation")) {
+    document.getElementById("modalAliasCreation").remove();
+  }
 
-  let closeBtn = document.createElement('span');
-  closeBtn.classList = "w3-button w3-display-topright w3-xlarge w3-hover-red";
-  closeBtn.innerHTML = "&times;";
-
-  modal.querySelector('header h2').append(closeBtn);  
   document.querySelector('body').append(modal);
 
-  // Username
-
-  let usernameInput = document.getElementById('username');
-  let usernameStatusBox = document.getElementById('username_infos');
-  let usernameRequirementsBox = document.getElementById('username_requirements');
-  let usernameScoreBox = document.getElementById('username_score');
-  let usernameWarningBox = document.getElementById('username_warning');
-
-  usernameInput.addEventListener("keyup", debounce(async function(event){
-    usernameRequirementsBox.innerHTML = "";
-    usernameScoreBox.innerHTML = "";
-    usernameWarningBox.innerHTML = "";
-
-    usernameRequirementsBox.style.display = "none";
-    usernameScoreBox.style.display = "none";
-    usernameWarningBox.style.display = "none";
-
-    if (usernameInput.value.length > 0) {
-      usernameStatusBox.classList.add("w3-ul");
-      usernameStatusBox.style.display = "block";
-
-      usernameRequirementsBox.innerHTML = '<img src="img/information-help.svg" height="22" width="22"> 4 caractères minimum';
-      usernameRequirementsBox.style.display = "inherit";
-
-      if (usernameInput.value.length > 3) {
-        usernameRequirementsBox.innerHTML = "";
-        usernameRequirementsBox.style.display = "none";
-
-        try {
-          let aliasExistence = await get_alias_informations(document.querySelector(`form#${formID}`));  
-          if (aliasExistence.length != 0) {
-            if (aliasExistence.error) {
-              console.log(aliasExistence);
-              usernameWarningBox.innerHTML = `<img src="img/warning-signs.svg" height="22" width="22" alt="Attention"> ${aliasExistence.error}`;
-              usernameWarningBox.style.display = "inherit";
-            } else {
-                if (aliasExistence[0]['active'] == 1) {
-                  console.log("Le compte existe déjà");
-                  usernameScoreBox.innerHTML = `<img src="img/checked-success.svg" height="22" width="22" alt="Success"> Le nom d'utilisateur est déjà utilisé`;
-                  usernameScoreBox.style.display = "inherit";      
-                } else {
-                  console.log(aliasExistence);
-                  usernameWarningBox.innerHTML = `<img src="img/warning-signs.svg" height="22" width="22" alt="Attention"> Erreur inconnu`;
-                  usernameWarningBox.style.display = "inherit";    
-                }              
-            }
-          } else if (aliasExistence.length == 0) {
-            console.log("Le compte n'existe pas");
-            usernameScoreBox.innerHTML = `<img src="img/checked-success.svg" height="22" width="22" alt="Success"> nom d'utilisateur valide`;
-            usernameScoreBox.style.display = "inherit";
-
-            usernameWarningBox.innerHTML = "";
-            usernameWarningBox.style.display = "none";
-          }
-      } catch {
-
-        }
-      }
-    } else {
-      usernameRequirementsBox.innerHTML = '<img src="img/information-help.svg" height="22" width="22"> 4 caractères minimum';
-      usernameRequirementsBox.style.display = "inherit";
-    }
-  }, 500));
+  add_username_input(formID);
+  add_alias_input(formID);
   
-  // Aliases
-  add_aliases_input(formID);
-
   // Form submission
   const parentForm = document.querySelector(`form#${formID}`);
-  parentForm.addEventListener("submit", (event) => {
+  const submitButton = document.querySelector(`button[form=${formID}]`);
+  submitButton.addEventListener("click", (event) => {
     event.preventDefault();
-    showLoader(formID);
+    console.log(parentForm);
+    showLoader('modalAliasCreation');
     add_alias(parentForm);
   });
 }
+/*
+function make_alias_deletion_modal(event) {
+  const formID = 'aliasDeletion';
+  let emailAddress = event.target.value
+  let username = emailAddress.split('@')[0];
+  let domain = emailAddress.split('@')[1];
+  let modalID = 'modalAliasDeletion';
 
-function mask_alias_creation_modal() {
-  const modal = document.getElementById("modal_alias_creation");
-  modal.style.display='none';
-  modal.remove();
-}
+  const template = document.querySelector("#alias_deletion_modal");
+  const modal = document.importNode(template.content, true);       
+  modal.querySelector('h2.modal-title').innerText = emailAddress;
 
-function show_alias_creation_modal() {
-  const modal = document.getElementById("modal_alias_creation");
-  const closeBtn = modal.querySelector('header span');
-  closeBtn.addEventListener('click', function(){
-    mask_alias_creation_modal();
+  const parentForm = modal.querySelector(`form#${formID}`);
+  
+  // Soumission du formulaire de suppression de compte mail
+  parentForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    showLoader(modalID);
+    delete_alias(parentForm,username,domain);
   });
 
-  modal.style.display='block';
+  document.querySelector('body').append(modal);
+  add_deletion_input(formID, "alias");
+
+  return modalID;
+}
+*/
+
+function add_deletion_input(formID, itemType) {
+  console.log(itemType);
+  const parentForm = document.getElementById(formID);
+  const deletionFieldset = parentForm.querySelector("fieldset[name='deletion']");
+  const template = document.querySelector("#deletion_input");
+  const templateContent = document.importNode(template.content, true);
+ // let deletionType;
+
+  let radioLabel = templateContent.querySelector("label");
+  let radioInputGroup = templateContent.querySelectorAll("input[name='email_delete']");
+  let radioTrue = templateContent.querySelector("input[name='email_delete'][value='true']");
+  let radioFalse = templateContent.querySelector("input[name='email_delete'][value='false']");
+
+  switch(itemType) {
+    case "deleteAlias":
+      radioLabel.innerText = radioLabel.innerText.replace("_ITEM_","cet alias");
+      break;
+    default:
+      radioLabel.innerText = radioLabel.innerText.replace("_ITEM_","ce compte");
+  }
+
+  radioInputGroup.forEach(inputRadio => {
+    inputRadio.addEventListener('click', () => {
+
+      if (radioTrue.checked === true) {
+        enable_form_button(formID)
+      }
+      if (radioFalse.checked === true) {
+        disable_form_button(formID)
+      }
+    });
+  })
+
+  deletionFieldset.appendChild(templateContent);
+}
+
+function add_username_input(formID) {
+  const parentForm = document.getElementById(formID);
+  const identityFieldset = parentForm.querySelector("fieldset[name='identity']");
+  const template = document.querySelector("#username_input");
+  const templateContent = document.importNode(template.content, true);
+  let usernameType;
+
+  switch(formID) {
+    case "email_edition":
+      usernameType = "compte e-mail";
+      templateContent.querySelector("input[name='username']").placeholder = "Nom d'utilisateur";
+      break;
+    case "aliasCreation":
+      usernameType = "alias";
+      templateContent.querySelector("input[name='username']").placeholder = "Nom de l'alias";
+      break;
+    default:
+      console.info(`Formulaire standard : ${formID}`);
+      usernameType = "compte e-mail";
+      templateContent.querySelector("input[name='username']").placeholder = "Nom d'utilisateur";
+  }
+
+  let usernameInput = templateContent.getElementById('username');
+
+  let usernameRequirementLenghtBox = templateContent.querySelector('#username-requirements-lenght');
+  let usernameRequirementLenghtIcon = templateContent.querySelector('#username-requirements-lenght i');
+
+  let usernameRequirementAvailableBox = templateContent.querySelector('#username-requirements-available');
+  let usernameRequirementAvailableIcon = templateContent.querySelector('#username-requirements-available i');
+
+  let usernameRequirementSpecialCharBox = templateContent.querySelector('#username-requirements-special-chars');
+  let usernameRequirementSpecialCharIcon = templateContent.querySelector('#username-requirements-special-chars i');
+
+  usernameInput.addEventListener("keyup", debounce(async function(event){
+    disable_form_button(formID);
+
+    usernameRequirementLenghtBox.classList.toggle('visually-hidden', false);
+    usernameRequirementSpecialCharBox.classList.toggle('visually-hidden', true);
+    usernameRequirementAvailableBox.classList.toggle('visually-hidden', true);
+
+    if (usernameInput.value.length > 0) {
+      usernameRequirementLenghtBox.classList = 'text-danger';
+      usernameRequirementLenghtIcon.classList = 'bi bi-x-circle';
+
+      if (validateSpecialChars(usernameInput.value)) {
+        usernameRequirementSpecialCharBox.classList.toggle('visually-hidden', true);
+      } else {
+        usernameRequirementSpecialCharBox.classList.toggle('visually-hidden', false);
+      }
+
+      if (usernameInput.value.length >= 3 && usernameInput.value.length <= 32) {
+      usernameRequirementLenghtBox.classList.toggle('visually-hidden', true);
+        if (validateSpecialChars(usernameInput.value)) {
+          usernameRequirementSpecialCharBox.classList.toggle('visually-hidden', true);
+          try {
+            let userExistence = verify_username_existence(document.querySelector(`form#${formID}`));
+
+            if (userExistence.length != 0) {
+              if (userExistence[0]['active'] == 1) {
+                console.log("Le compte existe déjà");
+              }
+            } else {
+              usernameRequirementAvailableBox.classList.toggle('visually-hidden', false);
+              console.log("Le compte n'existe pas");
+            }
+          } catch {
+
+          }
+        } else {
+          usernameRequirementSpecialCharBox.classList.toggle('visually-hidden', false);
+        }
+      }
+    } else {
+      usernameRequirementLenghtBox.classList = 'text-info-emphasis';
+      usernameRequirementLenghtIcon.classList = 'bi bi-info-circle';
+      usernameRequirementSpecialCharBox.classList.toggle('visually-hidden', true);
+    } 
+  }, 500));
+
+  identityFieldset.appendChild(templateContent);
+}
+
+function alias_validation(formID) {
+  let parentForm = document.getElementById(formID);
+  let aliasesFieldset = parentForm.querySelector("fieldset[name='aliases']");
+  let aliasesInput = aliasesFieldset.querySelector("input#aliases");
+  let aliases = aliasesInput.value.match(/([a-zA-Z0-9._+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})+/g);
+
+  console.log(aliases);
+
+  if (aliases) {
+    return aliases;
+  } else {
+    return false;
+  }
+}
+
+function verify_username_existence(formID) {
+  let formData = new FormData(formID);
+  let username = formData.get('username');
+
+  return Email.GlobalList.filter(user => user.username.includes(username));
+}
+
+function validateSpecialChars(str) {
+  const invalidCharsRegex = /[^a-zA-Z0-9.\-_+]/;
+  return !invalidCharsRegex.test(str)
 }

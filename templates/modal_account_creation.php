@@ -1,33 +1,35 @@
 <?php ob_start(); ?>
 <template id="account_creation_modal">
-  <div class="w3-modal" style="display: none;">
-    <div class="w3-modal-content w3-card-4">
-      <header class="w3-container w3-orange">
-        <h2></h2>
-      </header>
-      <div class="w3-container">
-        <div class="w3-container">
-          <form class="w3-container" id="email_creation">
-          <fieldset name="identity">
-            <h3>Identification</h3>
-            <label for="username">Nom d'utilisateur</label><input class="w3-input w3-border" id="username" name="username" type="text" autocomplete="new-password" pattern="^[\w\d]{1}[\w\d\-.]{4,32}[\w\d]$" required="true"></input>
-                <ul id="username_infos" style="display:none">
-                  <li id="username_requirements"></li>
-                  <li id="username_warning"></li>
-                  <li id="username_score"></li>
-                </ul>
-          </fieldset>
-          <fieldset name="security">
-            <h3>Sécurité</h3>
-          </fieldset>
-          <!--<h3>Paramètres facultatifs</h3>
-            <label for="quota">Quota</label><input class="w3-input w3-border" type="range" id="quota" name="quota" min="0" max="100"/>-->
-            <p><button class="w3-button w3-border" form="email_creation" name="send_email_creation" disabled="true">Créer le compte</button><span class="status_box"></span></p>
-          </form>
+  <div id="modalEmailCreation" class="modal fade" tabindex="-1" aria-labelledby="modalEmailCreation" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-secondary-subtle">
+          <h2 class="modal-title overflow-auto">Ajouter un compte</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <form class="" id="emailCreation">
+              <fieldset name="identity"><legend>Identification</legend></fieldset>
+              <hr>
+              <fieldset name="security"><legend>Mot de passe</legend></fieldset>
+              <hr>
+              <fieldset name="aliases"><legend>Redirection(s)</legend></fieldset>
+            </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" type="button" form="emailCreation" name="send_email_creation" disabled="true">
+            <span role="status">Créer le compte</span>
+          </button>
+          <div class="alert border-0 p-2 my-0">
+            <span class="status-icon" aria-hidden="true"></span>
+            <span class="status-text" aria-hidden="true"></span>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
+<?php require('username_input.php'); ?>
 <?php require('password_inputs.php'); ?>
+<?php require('aliases_input.php'); ?>
 <?php echo ob_get_clean(); ?>

@@ -1,34 +1,32 @@
-<?php ob_start(); ?>
-<template id="account_informations_modal">
-  <div class="w3-modal" style="display: none;">
-    <div class="w3-modal-content w3-card-4">
-      <header class="w3-container w3-orange"> 
-        <h2></h2>
-      </header>
-      <div class="w3-container">
-        <div class="w3-container">
-          <h3>Rediriger</h3>
-          <form class="w3-container" id="email_redirect">
-            <p>Rediriger les e-mails de ce compte ?
-            <input type="radio" id="email_redirect_true" name="email_redirect" value="true" autocomplete="off" /> <label for="email_redirect_true">Oui</label>
-            <input type="radio" id="email_redirect_false" name="email_redirect" value="false" autocomplete="off" /> <label for="email_redirect_false">Non</label></p>
-            <div id="redirect_target_list">
-              <label>Rediriger les e-mails vers :</label><select class="w3-select w3-border" name="redirectTarget" form="email_redirect" autocomplete="off"></select>
-            </div>
-            <p><button class="w3-button w3-border" form="email_redirect" name="send_email_redirect" disabled="true">Confirmer</button><span class="status_box"></span></p>
+<?php ob_start();?>
+<template id="account_edition_modal">
+  <div id="modalEmailEdition" class="modal fade" tabindex="-1" aria-labelledby="modalEmailEdition" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-secondary-subtle">
+          <h2 class="modal-title overflow-auto">Éditer un compte</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form class="" id="emailEdition">
+            <fieldset name="security"><legend>Mot de passe</legend></fieldset>
+            <hr>
+            <fieldset name="aliases"><legend>Redirection(s)</legend></fieldset>
           </form>
         </div>
-        <div class="w3-container">
-          <form class="w3-container" id="email_password">
-            <fieldset name="security">
-              <h3>Sécurité</h3>
-            </fieldset>
-          </form>
+        <div class="modal-footer justify-content-start">
+          <button class="btn btn-primary" type="button" form="emailEdition" name="send_email_edition" disabled="true">
+            <span role="status">Éditer le compte</span>
+          </button>
+          <div class="alert border-0 p-2 my-0">
+            <span class="status-icon" aria-hidden="true"></span>
+            <span class="status-text" aria-hidden="true"></span>
+          </div>
         </div>
       </div>
-      <footer class="w3-container w3-white"></footer>
     </div>
   </div>
 </template>
+<?php require('aliases_input.php'); ?>
 <?php require('password_inputs.php'); ?>
 <?php echo ob_get_clean(); ?>

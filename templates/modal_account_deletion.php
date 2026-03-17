@@ -1,21 +1,29 @@
-<?php ob_start(); ?>
+<?php ob_start() ?>
 <template id="account_deletion_modal">
-  <div class="w3-modal" style="display: none;">
-    <div class="w3-modal-content w3-card-4">
-      <header class="w3-container w3-orange">
-        <h2></h2>
-      </header>
-      <div class="w3-container">
-        <div class="w3-container">
-          <form class="w3-container" id="email_deletion">
-            <h3><!-- Voulez-vous supprimer le compte ... --></h3>
-            <label for="email_delete_true">Oui </label><input type="radio" id="email_delete_true" name="email_delete" value="true" autocomplete="off" />
-            <label for="email_delete_false">Non </label><input type="radio" id="email_delete_false" name="email_delete" value="false" autocomplete="off" checked="true"/>
-            <p><button class="w3-button w3-border" form="email_deletion" name="send_email_deletion" disabled="true">Supprimer le compte</button><span class="status_box"></span></p>
+  <div id="modalEmailDeletion" class="modal fade" tabindex="-1" aria-labelledby="modalEmailDeletion" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-secondary-subtle">
+          <h2 class="modal-title overflow-auto">Supprimer un compte</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form class="" id="emailDeletion">
+            <fieldset name="deletion"><legend>Suppression</legend></fieldset>
           </form>
+        </div>
+        <div class="modal-footer justify-content-start">
+          <button class="btn btn-primary" form="emailDeletion" name="send_email_deletion" disabled="true">
+            <span role="status">Supprimer le compte</span>
+          </button>
+          <div class="alert border-0 p-2 my-0">
+            <span class="status-icon" aria-hidden="true"></span>
+            <span class="status-text" aria-hidden="true"></span>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
+<?php require('deletion_inputs.php'); ?>
 <?php echo ob_get_clean(); ?>
